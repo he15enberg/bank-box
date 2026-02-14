@@ -2,10 +2,14 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../models/bank_sms_data.dart';
 
 class ExcelService {
+  // Target WhatsApp number (with country code, no + or spaces)
+  static const String whatsappNumber = '918072828935';
+
   Future<String> exportToExcel(List<BankSmsData> messages) async {
     final Workbook workbook = Workbook();
     final Worksheet sheet = workbook.worksheets[0];
@@ -90,10 +94,53 @@ class ExcelService {
     return filePath;
   }
 
+  /// Share file using system share sheet
   Future<void> shareFile(String filePath) async {
     await Share.shareXFiles(
       [XFile(filePath)],
       text: 'Bank SMS Export from Bankbox',
+    );
+  }
+
+  /// Share file directly to WhatsApp
+  /// This opens the share sheet but suggests WhatsApp
+  Future<void> shareToWhatsApp(String filePath) async {
+    // First, share the file (user will need to select WhatsApp)
+    await Share.shareXFiles(
+      [XFile(filePath)],
+      text: 'Bank SMS Export from Bankbox',
+    );
+  }
+
+  /// Open WhatsApp chat with the target number
+  Future<bool> openWhatsAppChat({String? message}) async {
+    final encodedMessage = Uri.encodeComponent(
+      message ?? 'Bank SMS Export from Bankbox',
+    );
+
+    // Try WhatsApp Business first, then regular WhatsApp
+    final whatsappUrls = [
+      'whatsapp://send?phone=$whatsappNumber&text=$encodedMessage',
+      'https://wa.me/$whatsappNumber?text=$encodedMessage',
+    ];
+
+    for (final urlString in whatsappUrls) {
+      final uri = Uri.parse(urlString);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Combined: Share file and open WhatsApp chat
+  Future<void> shareFileToWhatsApp(String filePath, {String? message}) async {
+    // Share the file first
+    await Share.shareXFiles(
+      [XFile(filePath)],
+      text: message ?? 'Bank SMS Export from Bankbox',
     );
   }
 }

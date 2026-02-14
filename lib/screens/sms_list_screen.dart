@@ -208,7 +208,6 @@ class _SmsListScreenState extends State<SmsListScreen> {
                               code,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontFamily: 'monospace',
                               ),
                             ),
                           ),
@@ -280,7 +279,6 @@ class _SmsListScreenState extends State<SmsListScreen> {
                   color: isSelected ? Colors.black : Colors.white,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontFamily: code != _allCodesValue ? 'monospace' : null,
                 ),
               ),
               const SizedBox(width: 6),
@@ -337,7 +335,6 @@ class _SmsListScreenState extends State<SmsListScreen> {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    fontFamily: 'monospace',
                   ),
                 ),
               ),

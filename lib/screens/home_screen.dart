@@ -118,26 +118,48 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(color: Color(0xFFA1A1A1)),
             ),
             const SizedBox(height: 24),
+            // WhatsApp Share Button (Primary)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  // Share file - user selects WhatsApp from share sheet
+                  await _excelService.shareFileToWhatsApp(filePath);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.send, size: 18),
+                label: const Text('Send via WhatsApp'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Other Share Options
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
                   _excelService.shareFile(filePath);
                 },
                 icon: const Icon(Icons.share, size: 18),
-                label: const Text('Share File'),
+                label: const Text('Other Share Options'),
               ),
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton(
+              child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Done'),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(color: Color(0xFFA1A1A1)),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
           ],
         ),
       ),

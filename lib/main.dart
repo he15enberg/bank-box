@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'screens/permission_screen.dart';
 
 void main() {
@@ -10,22 +11,31 @@ class BankboxApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use JetBrains Mono as the monospace font
+    final monoTextTheme = GoogleFonts.jetBrainsMonoTextTheme(
+      ThemeData.dark().textTheme,
+    );
+
     return MaterialApp(
       title: 'Bankbox',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
-        appBarTheme: const AppBarTheme(
+        textTheme: monoTextTheme.apply(
+          bodyColor: Colors.white,
+          displayColor: Colors.white,
+        ),
+        appBarTheme: AppBarTheme(
           backgroundColor: Colors.black,
           elevation: 0,
           centerTitle: false,
-          titleTextStyle: TextStyle(
+          titleTextStyle: GoogleFonts.jetBrainsMono(
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
-          iconTheme: IconThemeData(color: Colors.white),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
         colorScheme: const ColorScheme.dark(
           primary: Colors.white,
@@ -41,6 +51,9 @@ class BankboxApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            textStyle: GoogleFonts.jetBrainsMono(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
@@ -51,16 +64,23 @@ class BankboxApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            textStyle: GoogleFonts.jetBrainsMono(
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
+            textStyle: GoogleFonts.jetBrainsMono(),
           ),
         ),
-        snackBarTheme: const SnackBarThemeData(
-          backgroundColor: Color(0xFF1A1A1A),
-          contentTextStyle: TextStyle(color: Colors.white),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: const Color(0xFF1A1A1A),
+          contentTextStyle: GoogleFonts.jetBrainsMono(color: Colors.white),
+        ),
+        dropdownMenuTheme: DropdownMenuThemeData(
+          textStyle: GoogleFonts.jetBrainsMono(color: Colors.white),
         ),
       ),
       home: const PermissionScreen(),
