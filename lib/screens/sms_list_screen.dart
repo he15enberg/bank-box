@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/bank_sms_data.dart';
-import '../data/bank_directory.dart';
 
 class SmsListScreen extends StatefulWidget {
   final String bankName;
@@ -18,7 +17,9 @@ class SmsListScreen extends StatefulWidget {
 }
 
 class _SmsListScreenState extends State<SmsListScreen> {
-  String? _selectedCode;
+  static const String _allCodesValue = '__ALL__';
+
+  String _selectedCode = _allCodesValue;
   List<BankSmsData> _filteredMessages = [];
   List<String> _availableCodes = [];
 
@@ -29,36 +30,35 @@ class _SmsListScreenState extends State<SmsListScreen> {
   }
 
   void _initializeFilters() {
-    // Get all codes that actually have messages
+    // Get unique codes that actually have messages using a Set
     final Set<String> codesWithMessages = {};
     for (final msg in widget.messages) {
       codesWithMessages.add(msg.bankCode);
     }
 
-    // Get codes for this bank from directory
-    final bankCodes = BankDirectory.getCodesForBank(widget.bankName);
-
-    // Filter to only codes that have messages
-    _availableCodes =
-        bankCodes.where((code) => codesWithMessages.contains(code)).toList();
-
-    // Sort codes alphabetically
-    _availableCodes.sort();
+    // Convert to sorted list
+    _availableCodes = codesWithMessages.toList()..sort();
 
     // Initially show all messages
     _filteredMessages = widget.messages;
   }
 
   void _filterByCode(String? code) {
+    if (code == null) return;
+
     setState(() {
       _selectedCode = code;
-      if (code == null) {
+      if (code == _allCodesValue) {
         _filteredMessages = widget.messages;
       } else {
         _filteredMessages =
             widget.messages.where((msg) => msg.bankCode == code).toList();
       }
     });
+  }
+
+  int _getCountForCode(String code) {
+    return widget.messages.where((msg) => msg.bankCode == code).length;
   }
 
   @override
@@ -104,7 +104,7 @@ class _SmsListScreenState extends State<SmsListScreen> {
       ),
       body: Column(
         children: [
-          // Code filter dropdown
+          // Code filter dropdown - only show if there are multiple codes
           if (_availableCodes.length > 1) _buildCodeFilter(),
 
           // Messages list
@@ -158,17 +158,13 @@ class _SmsListScreenState extends State<SmsListScreen> {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedCode,
-                hint: const Text(
-                  'All Codes',
-                  style: TextStyle(color: Colors.white),
-                ),
                 icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
                 dropdownColor: const Color(0xFF1A1A1A),
                 isExpanded: true,
                 items: [
-                  // "All" option
+                  // "All Codes" option
                   DropdownMenuItem<String>(
-                    value: null,
+                    value: _allCodesValue,
                     child: Row(
                       children: [
                         const Icon(Icons.all_inclusive,
@@ -197,16 +193,9 @@ class _SmsListScreenState extends State<SmsListScreen> {
                       ],
                     ),
                   ),
-                  // Divider
-                  const DropdownMenuItem<String>(
-                    enabled: false,
-                    child: Divider(color: Color(0xFF2A2A2A)),
-                  ),
                   // Individual codes
                   ..._availableCodes.map((code) {
-                    final count = widget.messages
-                        .where((msg) => msg.bankCode == code)
-                        .length;
+                    final count = _getCountForCode(code);
                     return DropdownMenuItem<String>(
                       value: code,
                       child: Row(
@@ -247,19 +236,16 @@ class _SmsListScreenState extends State<SmsListScreen> {
               ),
             ),
           ),
-          // Code chips for quick selection
+          // Code chips for quick selection (only if 6 or fewer codes)
           if (_availableCodes.length <= 6) ...[
             const SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildCodeChip(null, 'All', widget.messages.length),
+                  _buildCodeChip(_allCodesValue, 'All', widget.messages.length),
                   ..._availableCodes.map((code) {
-                    final count = widget.messages
-                        .where((msg) => msg.bankCode == code)
-                        .length;
-                    return _buildCodeChip(code, code, count);
+                    return _buildCodeChip(code, code, _getCountForCode(code));
                   }),
                 ],
               ),
@@ -270,7 +256,7 @@ class _SmsListScreenState extends State<SmsListScreen> {
     );
   }
 
-  Widget _buildCodeChip(String? code, String label, int count) {
+  Widget _buildCodeChip(String code, String label, int count) {
     final isSelected = _selectedCode == code;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -294,16 +280,15 @@ class _SmsListScreenState extends State<SmsListScreen> {
                   color: isSelected ? Colors.black : Colors.white,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontFamily: code != null ? 'monospace' : null,
+                  fontFamily: code != _allCodesValue ? 'monospace' : null,
                 ),
               ),
               const SizedBox(width: 6),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.black.withValues(alpha: 0.2)
+                      ? Colors.black.withOpacity(0.2)
                       : const Color(0xFF2A2A2A),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -341,8 +326,7 @@ class _SmsListScreenState extends State<SmsListScreen> {
             children: [
               // Bank code badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2A2A2A),
                   borderRadius: BorderRadius.circular(4),
