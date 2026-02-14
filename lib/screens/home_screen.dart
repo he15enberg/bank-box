@@ -17,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final ExcelService _excelService = ExcelService();
 
   List<BankSmsData> _allMessages = [];
-  Map<String, List<BankSmsData>> _groupedMessages = {};
+  Map<String, List<BankSmsData>> _groupedByBankName = {};
   bool _isLoading = true;
   bool _isExporting = false;
 
@@ -32,11 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final messages = await _smsService.filterBankSms();
-      final grouped = _smsService.groupByBank(messages);
+      final grouped = _smsService.groupByBankName(messages);
 
       setState(() {
         _allMessages = messages;
-        _groupedMessages = grouped;
+        _groupedByBankName = grouped;
         _isLoading = false;
       });
     } catch (e) {
@@ -144,14 +144,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _navigateToSmsList(String bankCode) {
-    final messages = _groupedMessages[bankCode] ?? [];
+  void _navigateToSmsList(String bankName) {
+    final messages = _groupedByBankName[bankName] ?? [];
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => SmsListScreen(
-          bankCode: bankCode,
-          bankName: BankDirectory.getBankName(bankCode),
+          bankName: bankName,
           messages: messages,
         ),
       ),
@@ -232,26 +231,39 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    final sortedBanks = _groupedMessages.keys.toList()
+    // Sort banks by message count (descending)
+    final sortedBanks = _groupedByBankName.keys.toList()
       ..sort((a, b) =>
-          (_groupedMessages[b]?.length ?? 0) -
-          (_groupedMessages[a]?.length ?? 0));
+          (_groupedByBankName[b]?.length ?? 0) -
+          (_groupedByBankName[a]?.length ?? 0));
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildSummaryCard(),
         const SizedBox(height: 24),
-        const Text(
-          'Banks',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        Row(
+          children: [
+            const Text(
+              'Banks',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '${BankDirectory.totalCodes} codes tracked',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF666666),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
-        ...sortedBanks.map((bankCode) => _buildBankCard(bankCode)),
+        ...sortedBanks.map((bankName) => _buildBankCard(bankName)),
         const SizedBox(height: 80),
       ],
     );
@@ -307,7 +319,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '${_groupedMessages.length} banks',
+              '${_groupedByBankName.length} banks',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -319,16 +331,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBankCard(String bankCode) {
-    final messages = _groupedMessages[bankCode] ?? [];
-    final bankName = BankDirectory.getBankName(bankCode);
+  Widget _buildBankCard(String bankName) {
+    final messages = _groupedByBankName[bankName] ?? [];
+
+    // Get unique codes used in messages for this bank
+    final uniqueCodes = <String>{};
+    for (final msg in messages) {
+      uniqueCodes.add(msg.bankCode);
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _navigateToSmsList(bankCode),
+          onTap: () => _navigateToSmsList(bankName),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -341,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Container(
                   width: 4,
-                  height: 40,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(2),
@@ -355,14 +372,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         bankName,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w500,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        bankCode,
+                        '${uniqueCodes.length} sender ${uniqueCodes.length == 1 ? 'code' : 'codes'}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFFA1A1A1),

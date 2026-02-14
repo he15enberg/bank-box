@@ -52,6 +52,7 @@ class SmsService {
     return bankMessages;
   }
 
+  /// Group messages by bank code (original method)
   Map<String, List<BankSmsData>> groupByBank(List<BankSmsData> messages) {
     final Map<String, List<BankSmsData>> grouped = {};
     for (final msg in messages) {
@@ -59,6 +60,18 @@ class SmsService {
         grouped[msg.bankCode] = [];
       }
       grouped[msg.bankCode]!.add(msg);
+    }
+    return grouped;
+  }
+
+  /// Group messages by bank name (for the new UI with multiple codes per bank)
+  Map<String, List<BankSmsData>> groupByBankName(List<BankSmsData> messages) {
+    final Map<String, List<BankSmsData>> grouped = {};
+    for (final msg in messages) {
+      if (!grouped.containsKey(msg.bankName)) {
+        grouped[msg.bankName] = [];
+      }
+      grouped[msg.bankName]!.add(msg);
     }
     return grouped;
   }
