@@ -12,6 +12,7 @@ class PermissionScreen extends StatefulWidget {
 class _PermissionScreenState extends State<PermissionScreen> {
   final SmsService _smsService = SmsService();
   bool _isLoading = false;
+  bool _isCheckingPermission = true;
 
   @override
   void initState() {
@@ -20,23 +21,43 @@ class _PermissionScreenState extends State<PermissionScreen> {
   }
 
   Future<void> _checkExistingPermission() async {
-    final hasPermission = await _smsService.hasPermission();
-    if (hasPermission && mounted) {
-      _navigateToHome();
+    try {
+      final hasPermission = await _smsService.hasPermission();
+      if (hasPermission && mounted) {
+        _navigateToHome();
+        return;
+      }
+    } catch (e) {
+      // Permission check failed, show the permission request UI
+    }
+
+    if (mounted) {
+      setState(() => _isCheckingPermission = false);
     }
   }
 
   Future<void> _requestPermission() async {
     setState(() => _isLoading = true);
 
-    final granted = await _smsService.requestPermission();
+    try {
+      final granted = await _smsService.requestPermission();
 
-    setState(() => _isLoading = false);
+      if (!mounted) return;
 
-    if (granted) {
-      _navigateToHome();
-    } else {
-      _showDeniedDialog();
+      setState(() => _isLoading = false);
+
+      if (granted) {
+        _navigateToHome();
+      } else {
+        _showDeniedDialog();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error requesting permission: $e')),
+        );
+      }
     }
   }
 
@@ -86,6 +107,29 @@ class _PermissionScreenState extends State<PermissionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading while checking existing permission
+    if (_isCheckingPermission) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(height: 16),
+              Text(
+                'Checking permissions...',
+                style: TextStyle(
+                  color: Color(0xFFA1A1A1),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(

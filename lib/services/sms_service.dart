@@ -16,40 +16,49 @@ class SmsService {
   }
 
   Future<List<SmsMessage>> fetchAllSms() async {
-    final messages = await _query.getAllSms;
-    return messages;
+    try {
+      final messages = await _query.getAllSms;
+      return messages;
+    } catch (e) {
+      throw Exception('Failed to fetch SMS: $e');
+    }
   }
 
   Future<List<BankSmsData>> filterBankSms() async {
-    final allMessages = await fetchAllSms();
     final List<BankSmsData> bankMessages = [];
 
-    for (final sms in allMessages) {
-      final sender = sms.sender ?? '';
-      if (sender.isEmpty) continue;
+    try {
+      final allMessages = await fetchAllSms();
 
-      final bankCode = BankDirectory.findBankCode(sender);
-      if (bankCode != null) {
-        bankMessages.add(BankSmsData(
-          id: sms.id,
-          sender: sender,
-          bankCode: bankCode,
-          bankName: BankDirectory.getBankName(bankCode),
-          body: sms.body ?? '',
-          date: sms.date,
-          isRead: sms.isRead ?? false,
-        ));
+      for (final sms in allMessages) {
+        final sender = sms.sender ?? '';
+        if (sender.isEmpty) continue;
+
+        final bankCode = BankDirectory.findBankCode(sender);
+        if (bankCode != null) {
+          bankMessages.add(BankSmsData(
+            id: sms.id,
+            sender: sender,
+            bankCode: bankCode,
+            bankName: BankDirectory.getBankName(bankCode),
+            body: sms.body ?? '',
+            date: sms.date,
+            isRead: sms.isRead ?? false,
+          ));
+        }
       }
+
+      bankMessages.sort((a, b) {
+        if (a.date == null && b.date == null) return 0;
+        if (a.date == null) return 1;
+        if (b.date == null) return -1;
+        return b.date!.compareTo(a.date!);
+      });
+
+      return bankMessages;
+    } catch (e) {
+      throw Exception('Failed to filter bank SMS: $e');
     }
-
-    bankMessages.sort((a, b) {
-      if (a.date == null && b.date == null) return 0;
-      if (a.date == null) return 1;
-      if (b.date == null) return -1;
-      return b.date!.compareTo(a.date!);
-    });
-
-    return bankMessages;
   }
 
   /// Group messages by bank code (original method)
